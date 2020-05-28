@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using NSwag.AspNetCore;
 
 namespace SampleMvcApp
 {
@@ -68,9 +69,9 @@ namespace SampleMvcApp
                 {
                     // handle the logout redirection 
                     OnRedirectToIdentityProviderForSignOut = (context) =>
-                    {
-                        var logoutUri = $"https://{Configuration["Auth0:Domain"]}/v2/logout?client_id={Configuration["Auth0:ClientId"]}";
-
+                    {                        
+                     // var logoutUri = $"https://{Configuration["Auth0:Domain"]}/v2/logout?client_id={Configuration["Auth0:ClientId"]}";
+                        var logoutUri = $"https://{Configuration["Auth0:Domain"]}/protocol/openid-connect/logout?client_id={Configuration["Auth0:ClientId"]}";
                         var postLogoutUri = context.Properties.RedirectUri;
                         if (!string.IsNullOrEmpty(postLogoutUri))
                         {
@@ -80,18 +81,28 @@ namespace SampleMvcApp
                                 var request = context.Request;
                                 postLogoutUri = request.Scheme + "://" + request.Host + request.PathBase + postLogoutUri;
                             }
-                            logoutUri += $"&returnTo={ Uri.EscapeDataString(postLogoutUri)}";
+                         // logoutUri += $"&returnTo={ Uri.EscapeDataString(postLogoutUri)}";
+                            logoutUri += $"&redirect_uri={ Uri.EscapeDataString(postLogoutUri)}";
+                            
                         }
 
                         context.Response.Redirect(logoutUri);
                         context.HandleResponse();
 
                         return Task.CompletedTask;
-                    }
+                    },
+                    /* OnRedirectToIdentityProvider = context =>
+                    {
+                        context.ProtocolMessage.SetParameter("audience", "xZggFF2sjQU2srOsf9ZGl84UYUxhd2MB");
+                        return Task.FromResult(0);
+                    } */
+
                 };
             });
 
             services.AddControllersWithViews();
+            services.AddSwaggerDocument();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -106,6 +117,10 @@ namespace SampleMvcApp
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+
+
+            app.UseOpenApi();
+            app.UseSwaggerUi3();
 
             app.UseStaticFiles();
             app.UseCookiePolicy();
